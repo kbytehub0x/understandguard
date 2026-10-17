@@ -45,6 +45,9 @@ export default function DiffViewer({
     });
   }, [diffText]);
 
+  const addCount = parsedLines.filter((l) => l.type === "add").length;
+  const delCount = parsedLines.filter((l) => l.type === "del").length;
+
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/90 overflow-hidden shadow-2xl flex flex-col h-full">
       <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
@@ -54,13 +57,13 @@ export default function DiffViewer({
             {fileName}
           </span>
           <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-800/40">
-            AI-Generated Diff (42 lines)
+            Diff ({parsedLines.length} lines)
           </span>
         </div>
         <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
-          <span className="text-emerald-400">+32 additions</span>
+          <span className="text-emerald-400">+{addCount} additions</span>
           <span>•</span>
-          <span className="text-slate-500">0 deletions</span>
+          <span className="text-rose-400">-{delCount} deletions</span>
         </div>
       </div>
 
@@ -105,7 +108,7 @@ export default function DiffViewer({
                 )}
               </div>
 
-              {line.lineNumber === 48 && (
+              {line.lineNumber === 48 && fileName.includes("auth") && (
                 <div className="my-1.5 ml-14 mr-2 p-2 rounded-lg bg-rose-950/90 border border-rose-800/80 text-[11px] text-rose-200 font-sans flex items-center justify-between shadow-lg">
                   <div className="flex items-center gap-1.5 font-mono">
                     <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
@@ -116,6 +119,21 @@ export default function DiffViewer({
                   </div>
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-900/70 text-rose-200 border border-rose-700/70">
                     Race Condition
+                  </span>
+                </div>
+              )}
+
+              {line.lineNumber === 30 && fileName.includes("payment") && (
+                <div className="my-1.5 ml-14 mr-2 p-2 rounded-lg bg-rose-950/90 border border-rose-800/80 text-[11px] text-rose-200 font-sans flex items-center justify-between shadow-lg">
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span className="font-bold text-rose-300">HIDDEN BUG:</span>
+                    <span className="text-slate-300">
+                      Missing idempotency_key in Stripe charge & uncommitted DB state
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-900/70 text-rose-200 border border-rose-700/70">
+                    Double-Billing Risk
                   </span>
                 </div>
               )}

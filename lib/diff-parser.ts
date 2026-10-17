@@ -51,7 +51,10 @@ export function parseGitDiff(rawDiff: string): ParsedDiffSummary {
         // Detect critical patterns in added code
         if (change.type === "add") {
           const content = change.content;
-          if (/async|await|Promise|race|mutex|lock/i.test(content)) {
+          if (
+            /async|await|Promise|race|mutex|lock/i.test(content) &&
+            !criticalSnippets.some((s) => s.riskCategory === "CONCURRENCY")
+          ) {
             criticalSnippets.push({
               name: "async/concurrency flow",
               startLine: lineNum || 0,
@@ -59,17 +62,23 @@ export function parseGitDiff(rawDiff: string): ParsedDiffSummary {
               riskCategory: "CONCURRENCY",
               snippet: content.trim(),
             });
-          } else if (/token|auth|session|jwt|header/i.test(content)) {
+          } else if (
+            /token|auth|session|jwt|header|stripe|charges/i.test(content) &&
+            !criticalSnippets.some((s) => s.riskCategory === "AUTH_STATE")
+          ) {
             criticalSnippets.push({
-              name: "auth token handling",
+              name: "state & transaction boundary",
               startLine: lineNum || 0,
               endLine: lineNum || 0,
               riskCategory: "AUTH_STATE",
               snippet: content.trim(),
             });
-          } else if (/catch|throw|error|429|retry/i.test(content)) {
+          } else if (
+            /catch|throw|error|429|retry|except/i.test(content) &&
+            !criticalSnippets.some((s) => s.riskCategory === "ERROR_HANDLING")
+          ) {
             criticalSnippets.push({
-              name: "error boundary & retry",
+              name: "error boundary & rollback",
               startLine: lineNum || 0,
               endLine: lineNum || 0,
               riskCategory: "ERROR_HANDLING",
@@ -118,18 +127,27 @@ function fallbackParse(rawDiff: string): ParsedDiffSummary {
     }
   }
 
+  const fileMatch = rawDiff.match(/\+\+\+ b\/(.+)/);
+  const extractedFile = fileMatch ? fileMatch[1].trim() : "unknown.diff";
+
   return {
-    file: "src/auth.ts",
+    file: extractedFile,
     totalAdditions: additions,
     totalDeletions: deletions,
     changedLines,
     criticalSnippets: [
       {
-        name: "refreshToken()",
-        startLine: 40,
-        endLine: 74,
-        riskCategory: "CONCURRENCY",
-        snippet: "export async function refreshToken()",
+        name: extractedFile.includes("payment")
+          ? "process_checkout_charge()"
+          : "refreshToken()",
+        startLine: extractedFile.includes("payment") ? 22 : 40,
+        endLine: extractedFile.includes("payment") ? 42 : 74,
+        riskCategory: extractedFile.includes("payment")
+          ? "AUTH_STATE"
+          : "CONCURRENCY",
+        snippet: extractedFile.includes("payment")
+          ? "async def process_checkout_charge()"
+          : "export async function refreshToken()",
       },
     ],
   };

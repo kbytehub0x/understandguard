@@ -38,6 +38,16 @@ export default function Navbar() {
             <span>Demo Mode (Recording)</span>
           </Link>
 
+          <a
+            href="https://understandguard.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden lg:flex items-center space-x-1 text-[11px] font-mono text-emerald-400 hover:text-emerald-300 transition px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800"
+          >
+            <span>understandguard.vercel.app</span>
+            <span className="text-[10px]">↗</span>
+          </a>
+
           <Link
             href="/"
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition"

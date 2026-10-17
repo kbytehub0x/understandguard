@@ -87,7 +87,7 @@ export const PYTHON_DEMO_EVALUATION = {
   adversarialTest: {
     targetFunction: "process_checkout_charge()",
     targetLine: 30,
-    testFramework: "vitest" as const, // Rendered cleanly in test viewer
+    testFramework: "pytest" as const,
     testCode: `@pytest.mark.asyncio
 async def test_duplicate_charge_on_worker_timeout(payment_processor, mock_stripe):
     # Simulate first attempt where Stripe charges but DB connection drops
