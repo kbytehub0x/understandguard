@@ -1,0 +1,80 @@
+{
+  "scenario": "AI-Generated Token Refresh with Concurrency Flaw",
+  "file": "src/auth.ts",
+  "diff": "--- a/src/auth.ts\n+++ b/src/auth.ts\n@@ -35,32 +35,42 @@ interface SessionTokens {\n   refreshToken: string;\n   expiresAt: number;\n }\n\n+// AI-Generated Token Refresh Flow\n+let activeTokens: SessionTokens | null = null;\n+\n+export async function refreshToken(): Promise<string> {\n+  const storedRefreshToken = getStoredRefreshToken();\n+  if (!storedRefreshToken)\n+    throw new Error(\"No refresh token available\");\n+  }\n+\n+  try {\n+    const response = await fetch(\"/api/v1/auth/refresh\", {\n+      method: \"POST\",\n+      headers: { \"Content-Type\": \"application/json\" },\n+      body: JSON.stringify({ token: storedRefreshToken }),\n+    });\n+\n+    if (!response.ok) {\n+      throw new Error(`Token refresh failed with status ${response.status}`);\n+    }\n+\n+    const data = await response.json();\n+    activeTokens = {\n+      accessToken: data.accessToken,\n+      refreshToken: data.refreshToken,\n+      expiresAt: Date.now() + data.expiresIn * 1000,\n+    };\n+\n+    saveStoredTokens(activeTokens);\n+    return activeTokens.accessToken;\n+  } catch (error) {\n+    clearStoredTokens();\n+    throw error;\n+  }\n+}",
+  "metadata": {
+    "totalAdditions": 32,
+    "totalDeletions": 0,
+    "criticalFunctions": [
+      {
+        "name": "refreshToken()",
+        "startLine": 40,
+        "endLine": 74,
+        "riskCategory": "CONCURRENCY"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "targetLine": 41,
+      "targetFunction": "refreshToken()",
+      "prompt": "Line 41 retrieves the stored token before calling the endpoint. Where is this persisted, and how does your application ensure memory tokens stay in sync with storage across browser tabs?",
+      "contextSnippet": "const storedRefreshToken = getStoredRefreshToken();",
+      "expectedInsight": "Clarify token persistence mechanism (localStorage vs HTTP-only cookie) and state sync."
+    },
+    {
+      "id": "q2",
+      "targetLine": 48,
+      "targetFunction": "refreshToken()",
+      "prompt": "Lines 48–54 fire a network fetch to refresh the token. What happens if two separate components trigger concurrent API calls that both receive a 401 at the exact same millisecond?",
+      "contextSnippet": "const response = await fetch('/api/v1/auth/refresh', ...);",
+      "expectedInsight": "Identify that simultaneous calls will fire duplicate refresh requests without an in-flight promise lock, causing token reuse rotation errors."
+    },
+    {
+      "id": "q3",
+      "targetLine": 70,
+      "targetFunction": "refreshToken()",
+      "prompt": "In line 71, the catch block executes clearStoredTokens() on any caught error. What happens if the endpoint returns HTTP 429 (Rate Limit) or an intermittent network timeout?",
+      "contextSnippet": "} catch (error) { clearStoredTokens(); throw error; }",
+      "expectedInsight": "Explain that transient network hiccups or rate limits will mistakenly log out the user rather than triggering exponential backoff retry."
+    }
+  ],
+  "sampleDemoAnswers": {
+    "q1": {
+      "userAnswer": "Lines 41-45 read the token from secure storage and send a POST request. Stored tokens are refreshed in activeTokens and written back using saveStoredTokens.",
+      "score": 9,
+      "isVague": false,
+      "critique": "Solid technical grasp of token persistence and storage updating."
+    },
+    "q2": {
+      "userAnswer": "It handles errors gracefully and retries if needed through the try/catch block.",
+      "score": 3,
+      "isVague": true,
+      "critique": "Vague answer. Misses the concurrency race condition. The code does not deduplicate in-flight requests or implement retries.",
+      "identifiedBlindSpot": "Missing in-flight request deduplication / mutex lock during concurrent 401s."
+    },
+    "q3": {
+      "userAnswer": "Summarized for demo: Catch block logs out on all errors without backoff.",
+      "score": 7,
+      "isVague": false,
+      "critique": "Sufficient awareness of aggressive logout behavior."
+    }
+  },
+  "evaluationResult": {
+    "comprehensionScore": 63,
+    "riskLevel": "HIGH",
+    "verdictBadge": "High Cognitive Debt – Review Required",
+    "flaggedFunction": "refreshToken() (Lines 40–74)",
+    "flaggedReason": "Author could not explain concurrent execution behavior. Risk of race condition in production.",
+    "adversarialTest": {
+      "targetFunction": "refreshToken()",
+      "targetLine": 48,
+      "testFramework": "vitest",
+      "testCode": "import { describe, it, expect, vi } from 'vitest';\nimport { refreshToken } from './auth';\n\ndescribe('UnderstandGuard Adversarial Suite: auth.ts', () => {\n  it('fails when concurrent 401s fire duplicate refresh requests without a mutex', async () => {\n    // Simulate 2 parallel calls made at the same millisecond\n    const [call1, call2] = await Promise.allSettled([\n      refreshToken(),\n      refreshToken()\n    ]);\n\n    // Both calls must succeed using a single shared in-flight promise\n    expect(call1.status).toBe('fulfilled');\n    expect(call2.status).toBe('fulfilled');\n    // ❌ Assertion Failure:\n    // expect(call2.status).toBe('fulfilled') // Received: 'rejected' (Token rotation conflict: HTTP 409/500)\n  });\n});",
+      "assertionFailure": "expect(call2.status).toBe('fulfilled') // ❌ Received: 'rejected' (500: Token already rotated by concurrent request)",
+      "vulnerabilityExplanation": "Without an in-flight Promise mutex (e.g., let refreshPromise = null), concurrent requests fire duplicate refresh calls with the same old refresh token. The server invalidates the token family on second attempt, destroying user sessions."
+    },
+    "cognitiveMapMarkdown": "# COGNITIVE MAP: src/auth.ts\n\n**Verdict:** 🚨 **High Cognitive Debt – Review Required**  \n**Comprehension Score:** 63/100  \n**Primary Blind Spot:** Missing Concurrency Lock in `refreshToken()`  \n\n### Component Flow & Collision Point\n```mermaid\nsequenceDiagram\n    autonumber\n    participant ComponentA as Component A (401)\n    participant ComponentB as Component B (401)\n    participant Client as UnderstandGuard Client\n    participant AuthServer as /api/v1/auth/refresh\n\n    ComponentA->>Client: Call refreshToken() [Token: RT_1]\n    ComponentB->>Client: Call refreshToken() [Token: RT_1] (Concurrent!)\n    Client->>AuthServer: Request 1 (uses RT_1)\n    Client->>AuthServer: Request 2 (uses RT_1)\n    AuthServer-->>Client: Request 1 Success -> Issues RT_2, AT_2\n    Note over AuthServer,Client: RT_1 is now invalidated by server rotation!\n    AuthServer-->>Client: Request 2 Fails (401/409 Reused Token!)\n    Client->>Client: clearStoredTokens() -> User unexpectedly logged out!\n```\n\n### Mitigation Recommendation\nImplement an in-flight promise cache:\n```typescript\nlet inFlightRefresh: Promise<string> | null = null;\nexport function refreshToken(): Promise<string> {\n  if (inFlightRefresh) return inFlightRefresh;\n  inFlightRefresh = performRefresh().finally(() => { inFlightRefresh = null; });\n  return inFlightRefresh;\n}\n```"
+  }
+}
