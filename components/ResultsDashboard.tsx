@@ -34,7 +34,10 @@ export default function ResultsDashboard({ result, onReset }: ResultsDashboardPr
   };
 
   const downloadCognitiveMap = () => {
-    const blob = new Blob([result.cognitiveMapMarkdown], {
+    const content =
+      result.cognitiveMapMarkdown ||
+      "# COGNITIVE_MAP\n\nNo architecture data generated for this session.";
+    const blob = new Blob([content], {
       type: "text/markdown;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
@@ -48,8 +51,18 @@ export default function ResultsDashboard({ result, onReset }: ResultsDashboardPr
   };
 
   const copyPrBadge = () => {
-    const color = result.riskLevel === "HIGH" ? "rose" : result.riskLevel === "MEDIUM" ? "amber" : "emerald";
-    const statusText = result.riskLevel === "HIGH" ? "High_Risk" : "Low_Debt";
+    const color =
+      result.riskLevel === "HIGH"
+        ? "critical"
+        : result.riskLevel === "MEDIUM"
+        ? "important"
+        : "success";
+    const statusText =
+      result.riskLevel === "HIGH"
+        ? "High_Risk"
+        : result.riskLevel === "MEDIUM"
+        ? "Medium_Risk"
+        : "Low_Debt";
     const badgeMarkdown = `[![UnderstandGuard Audit](https://img.shields.io/badge/Cognitive_Debt-${statusText}_(${result.comprehensionScore}%2F100)-${color}?style=flat-square&logo=github)](https://understandguard.vercel.app)`;
     navigator.clipboard.writeText(badgeMarkdown);
     setCopiedBadge(true);

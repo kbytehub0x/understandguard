@@ -78,13 +78,27 @@ export default function InterviewCard({
       <div>
         {/* Step indicator */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2.5">
             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-mono font-bold">
               {currentIdx + 1}
             </span>
             <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
               Question {currentIdx + 1} of {questions.length}
             </span>
+            <div className="hidden sm:flex items-center gap-1.5 ml-1">
+              {questions.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i < currentIdx
+                      ? "w-4 bg-emerald-500"
+                      : i === currentIdx
+                      ? "w-6 bg-emerald-400 animate-pulse"
+                      : "w-3 bg-slate-700"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">

@@ -142,6 +142,7 @@ export default function HomePage() {
           activePreset === "py" ? (PYTHON_DEMO_EVALUATION as any) : DEMO_EVALUATION
         );
         setStep("results");
+        setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
         return;
       }
 
@@ -158,12 +159,14 @@ export default function HomePage() {
       const data = await res.json();
       setEvaluation(data);
       setStep("results");
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
     } catch (err) {
       console.error("Failed to evaluate interview:", err);
       setEvaluation(
         activePreset === "py" ? (PYTHON_DEMO_EVALUATION as any) : DEMO_EVALUATION
       );
       setStep("results");
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
     } finally {
       setIsLoading(false);
     }
@@ -207,12 +210,19 @@ export default function HomePage() {
               onClick={() => setUseMock(!useMock)}
               className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-mono border transition ${
                 useMock
-                  ? "bg-amber-950/40 border-amber-800/60 text-amber-300"
-                  : "bg-slate-800 border-slate-700 text-slate-300"
+                  ? "bg-amber-950/50 border-amber-800 text-amber-300"
+                  : "bg-emerald-950/50 border-emerald-800 text-emerald-300"
               }`}
             >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  useMock ? "bg-amber-400" : "bg-emerald-400 animate-pulse"
+                }`}
+              />
               <Zap className="w-3.5 h-3.5" />
-              <span>Engine: {useMock ? "Deterministic Mock (Instant)" : "Live Gemini 1.5/2.5 Flash"}</span>
+              <span>
+                Engine: {useMock ? "Deterministic Mock (Instant)" : "Live Gemini 1.5-Flash (Connected)"}
+              </span>
             </button>
           </div>
         </div>

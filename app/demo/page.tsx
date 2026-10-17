@@ -227,12 +227,6 @@ export default function DemoPage() {
               onSelectLine={(line) => setHighlightLine(line)}
             />
           )}
-
-          {step === "results" && evaluation && (
-            <div className="lg:hidden">
-              <ResultsDashboard result={evaluation} onReset={handleReset} />
-            </div>
-          )}
         </div>
       </div>
 

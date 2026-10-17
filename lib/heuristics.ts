@@ -8,33 +8,36 @@ export interface CriticalSegment {
 export function detectCriticalVulnerabilities(diffText: string): CriticalSegment[] {
   const segments: CriticalSegment[] = [];
 
-  if (/async\s+function|await\s+fetch|Promise/i.test(diffText)) {
+  // JavaScript / TypeScript / Python / Go Concurrency & Async
+  if (/async\s+function|await\s+fetch|Promise|async\s+def|await\s+asyncio|aiohttp|go\s+func|sync\.Mutex/i.test(diffText)) {
     segments.push({
       name: "Asynchronous Network & Concurrency Flow",
       category: "CONCURRENCY",
-      lineRange: "Lines 40–55",
+      lineRange: "Core Async Lines",
       heuristicReason:
-        "High risk of race conditions or duplicate in-flight requests during rapid re-render or simultaneous 401s.",
+        "High risk of race conditions, unhandled task timeouts, or duplicate in-flight requests during concurrent triggers.",
     });
   }
 
-  if (/token|refreshToken|bearer|authorization/i.test(diffText)) {
+  // Token & Payment Idempotency State
+  if (/token|refreshToken|bearer|authorization|stripe|charges\.create|idempotency/i.test(diffText)) {
     segments.push({
-      name: "Token Persistence & Authentication State",
+      name: "Authentication & Payment Idempotency State",
       category: "AUTH_STATE",
-      lineRange: "Lines 35–45",
+      lineRange: "State Mutation Lines",
       heuristicReason:
-        "Security-critical state persistence; risk of session desynchronization across tabs.",
+        "Security-critical state persistence or financial API calls; risk of session desync or duplicate billing without idempotency keys.",
     });
   }
 
-  if (/catch\s*\(|throw\s+error|clearStoredTokens/i.test(diffText)) {
+  // Error boundaries, transactions, and rollback sagas
+  if (/catch\s*\(|throw\s+error|clearStoredTokens|except\s+|raise\s+|conn\.transaction/i.test(diffText)) {
     segments.push({
-      name: "Aggressive Session Destruction / Catch Fallback",
+      name: "Error Handling & Transaction Boundaries",
       category: "ERROR_HANDLING",
-      lineRange: "Lines 68–74",
+      lineRange: "Exception & Rollback Lines",
       heuristicReason:
-        "Risk of premature session invalidation on transient network 429 rate limits or timeouts.",
+        "Risk of premature session invalidation or uncommitted database state when upstream gateway calls fail.",
     });
   }
 

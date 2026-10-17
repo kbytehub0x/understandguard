@@ -18,7 +18,10 @@ export async function generateInterviewQuestions(
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" },
+    });
     const prompt = `You are UnderstandGuard, an elite code reviewer. Your job is to test if a developer genuinely understands an AI-generated Git diff or if they blindly accepted it (accumulating Cognitive Debt).
 
 Git Diff:
@@ -61,7 +64,10 @@ export async function evaluateDeveloperAnswers(
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" },
+    });
     const prompt = `You are UnderstandGuard. Evaluate developer responses to interview questions regarding this Git diff to determine if they understand the code or provided vague, superficial hand-waving answers.
 
 Git Diff:

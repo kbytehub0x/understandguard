@@ -29,12 +29,16 @@ export async function POST(req: NextRequest) {
     const [, owner, repo, pullNumber] = match;
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`;
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        Accept: "application/vnd.github.v3.diff",
-        "User-Agent": "UnderstandGuard-Audit-Bot",
-      },
-    });
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3.diff",
+      "User-Agent": "UnderstandGuard-Audit-Bot",
+    };
+
+    if (process.env.GITHUB_TOKEN) {
+      headers["Authorization"] = `Bearer ${process.env.GITHUB_TOKEN}`;
+    }
+
+    const response = await fetch(apiUrl, { headers });
 
     if (!response.ok) {
       return NextResponse.json(
