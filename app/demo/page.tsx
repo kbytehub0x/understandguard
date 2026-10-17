@@ -10,17 +10,27 @@ import {
   DEMO_EVALUATION,
   EvaluationResult,
 } from "@/fixtures/demoData";
+import {
+  PYTHON_DEMO_DIFF_TEXT,
+  PYTHON_DEMO_QUESTIONS,
+  PYTHON_DEMO_EVALUATION,
+} from "@/fixtures/pythonDemoData";
 import { Play, Sparkles, RefreshCw, CheckCircle, ShieldAlert } from "lucide-react";
 
 export default function DemoPage() {
+  const [activeLang, setActiveLang] = useState<"ts" | "py">("ts");
   const [step, setStep] = useState<"ready" | "interview" | "results">("ready");
   const [highlightLine, setHighlightLine] = useState<number>(48);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const activeDiff = activeLang === "ts" ? DEMO_DIFF_TEXT : PYTHON_DEMO_DIFF_TEXT;
+  const activeQuestions = activeLang === "ts" ? DEMO_QUESTIONS : PYTHON_DEMO_QUESTIONS;
+  const activeFileName = activeLang === "ts" ? "src/auth.ts" : "services/payment_worker.py";
+
   const startInterview = () => {
     setStep("interview");
-    setHighlightLine(41);
+    setHighlightLine(activeLang === "ts" ? 41 : 22);
   };
 
   const handleInterviewComplete = async (
@@ -34,18 +44,22 @@ export default function DemoPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          diff: DEMO_DIFF_TEXT,
+          diff: activeDiff,
           answers,
           mock: true,
         }),
       });
 
       const data = await res.json();
-      setEvaluation(data);
+      setEvaluation(
+        activeLang === "py" ? (PYTHON_DEMO_EVALUATION as any) : data
+      );
       setStep("results");
     } catch {
       // Deterministic fallback
-      setEvaluation(DEMO_EVALUATION);
+      setEvaluation(
+        activeLang === "py" ? (PYTHON_DEMO_EVALUATION as any) : DEMO_EVALUATION
+      );
       setStep("results");
     } finally {
       setIsLoading(false);
@@ -54,7 +68,14 @@ export default function DemoPage() {
 
   const handleReset = () => {
     setStep("ready");
-    setHighlightLine(48);
+    setHighlightLine(activeLang === "ts" ? 48 : 30);
+    setEvaluation(null);
+  };
+
+  const selectLanguage = (lang: "ts" | "py") => {
+    setActiveLang(lang);
+    setStep("ready");
+    setHighlightLine(lang === "ts" ? 48 : 30);
     setEvaluation(null);
   };
 
@@ -78,17 +99,41 @@ export default function DemoPage() {
             </span>
           </h1>
           <p className="text-sm font-medium text-slate-200 mt-1">
-            <span className="text-emerald-400 font-semibold">"AI writes code. Humans must understand it."</span> — Auditing AI-generated <code className="text-emerald-300 font-mono bg-slate-900 px-1 py-0.5 rounded">src/auth.ts</code>
+            <span className="text-emerald-400 font-semibold">"AI writes code. Humans must understand it."</span> — Auditing AI-generated <code className="text-emerald-300 font-mono bg-slate-900 px-1 py-0.5 rounded">{activeFileName}</code>
           </p>
         </div>
 
         <div className="flex items-center space-x-3">
+          {/* Language Switcher */}
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs font-mono">
+            <button
+              onClick={() => selectLanguage("ts")}
+              className={`px-2.5 py-1 rounded-md transition ${
+                activeLang === "ts"
+                  ? "bg-emerald-600 text-white font-bold"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              TS (Auth)
+            </button>
+            <button
+              onClick={() => selectLanguage("py")}
+              className={`px-2.5 py-1 rounded-md transition ${
+                activeLang === "py"
+                  ? "bg-amber-600 text-white font-bold"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Py (Stripe)
+            </button>
+          </div>
+
           <button
             onClick={handleReset}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition border border-slate-700"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset Demo State</span>
+            <span>Reset Demo</span>
           </button>
 
           {step === "ready" && (
@@ -112,14 +157,16 @@ export default function DemoPage() {
               Target Pull Request Diff
             </span>
             <span className="text-[11px] font-mono text-amber-400">
-              Vulnerability: Concurrency Lock Missing (Lines 48–54)
+              {activeLang === "ts"
+                ? "Vulnerability: Concurrency Lock Missing (Lines 48–54)"
+                : "Vulnerability: Missing Idempotency Key & DB Rollback"}
             </span>
           </div>
 
           <DiffViewer
-            diffText={DEMO_DIFF_TEXT}
+            diffText={activeDiff}
             highlightLine={highlightLine}
-            fileName="src/auth.ts"
+            fileName={activeFileName}
           />
         </div>
 
@@ -136,7 +183,7 @@ export default function DemoPage() {
                     Diff Pre-flight Check Complete
                   </h3>
                   <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    UnderstandGuard parsed <strong>32 additions</strong> in <code className="text-emerald-400">auth.ts</code>. Detected high-risk async concurrency flow.
+                    UnderstandGuard parsed changes in <code className="text-emerald-400 font-mono">{activeFileName}</code>. Detected high-risk {activeLang === "ts" ? "async concurrency race condition" : "idempotency & transaction boundary flaw"}.
                   </p>
                 </div>
               </div>
@@ -153,11 +200,11 @@ export default function DemoPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    Detect superficial / vague non-answers
+                    Transparent 3-vector evaluation rubric
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    Synthesize adversarial Vitest test for weak spots
+                    Synthesize adversarial test + Mentor Coaching
                   </li>
                 </ul>
               </div>
@@ -174,7 +221,7 @@ export default function DemoPage() {
 
           {step === "interview" && (
             <InterviewCard
-              questions={DEMO_QUESTIONS}
+              questions={activeQuestions}
               onComplete={handleInterviewComplete}
               isLoading={isLoading}
               onSelectLine={(line) => setHighlightLine(line)}
@@ -183,7 +230,6 @@ export default function DemoPage() {
 
           {step === "results" && evaluation && (
             <div className="lg:hidden">
-              {/* Fallback for small screens */}
               <ResultsDashboard result={evaluation} onReset={handleReset} />
             </div>
           )}

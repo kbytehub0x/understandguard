@@ -84,6 +84,16 @@ Return STRICT JSON matching this schema:
   "verdictBadge": "High Cognitive Debt – Review Required",
   "flaggedFunction": "functionName()",
   "flaggedReason": "explanation of blind spot",
+  "rubricScores": {
+    "technicalSpecificity": 5,
+    "concurrencyAwareness": 3,
+    "mitigationAccuracy": 4,
+    "critique": "Senior architect critique of the developer answers"
+  },
+  "mentorExplanation": {
+    "seniorPerspective": "What a staff engineer would expect to see",
+    "recommendedFix": "Code snippet fixing the vulnerability"
+  },
   "adversarialTest": {
     "targetFunction": "functionName",
     "targetLine": 48,

@@ -41,12 +41,26 @@ export interface AdversarialTest {
   vulnerabilityExplanation: string;
 }
 
+export interface RubricScores {
+  technicalSpecificity: number;
+  concurrencyAwareness: number;
+  mitigationAccuracy: number;
+  critique: string;
+}
+
+export interface MentorExplanation {
+  seniorPerspective: string;
+  recommendedFix: string;
+}
+
 export interface EvaluationResult {
   comprehensionScore: number;
   riskLevel: "LOW" | "MEDIUM" | "HIGH";
   verdictBadge: "Safe to Review" | "High Cognitive Debt – Review Required";
   flaggedFunction: string;
   flaggedReason: string;
+  rubricScores?: RubricScores;
+  mentorExplanation?: MentorExplanation;
   adversarialTest: AdversarialTest;
   cognitiveMapMarkdown: string;
 }
@@ -141,6 +155,29 @@ export const DEMO_EVALUATION: EvaluationResult = {
   flaggedFunction: "refreshToken() (Lines 40–74)",
   flaggedReason:
     "Author could not explain concurrent execution behavior. Risk of race condition in production.",
+  rubricScores: {
+    technicalSpecificity: 5,
+    concurrencyAwareness: 2,
+    mitigationAccuracy: 4,
+    critique:
+      "The author provided a surface-level answer ('handles errors gracefully') with zero mention of in-flight mutex deduplication or token rotation. In production, simultaneous 401s will trigger invalid token reuse conflicts.",
+  },
+  mentorExplanation: {
+    seniorPerspective:
+      "When handling authentication token refresh, network requests are asynchronous and independent. If multiple requests fail with 401 simultaneously, they all invoke refreshToken(). Without an in-flight promise lock, the first request rotates the token, and the subsequent requests send an already-invalidated token, causing the server to revoke the session and force-logout the user.",
+    recommendedFix: `// Add in-flight promise deduplication:
+let refreshPromise: Promise<string> | null = null;
+
+export function refreshToken(): Promise<string> {
+  if (refreshPromise) return refreshPromise;
+  
+  refreshPromise = performTokenRefresh().finally(() => {
+    refreshPromise = null; // Clean up lock on completion
+  });
+  
+  return refreshPromise;
+}`,
+  },
   adversarialTest: {
     targetFunction: "refreshToken()",
     targetLine: 48,
