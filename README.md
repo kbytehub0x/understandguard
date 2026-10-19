@@ -17,14 +17,14 @@ As required by the **Devpost: Build with AI — Basics** hackathon guidelines:
 
 * 🎯 **[`scope.md`](./scope.md)** — Project boundaries, MVP criteria, and explicit out-of-scope constraints.
 * 📋 **[`prd.md`](./prd.md)** — User personas (AI developer vs. tech lead), user journeys, and success metrics.
-* 📐 **[`spec.md`](./spec.md)** — Technical architecture, Mermaid sequence flows, AST parsing, and API schemas.
+* 📐 **[`spec.md`](./spec.md)** — Technical architecture, Mermaid sequence flows, diff-aware risk analysis, and API schemas.
 * 📦 **[`fixtures/`](./fixtures/)** — Demo diff (`auth.patch`), question fixtures, and adversarial test suites.
 
 ---
 
 ## 🚨 The Problem: "Cognitive Debt"
 
-With tools like Cursor and Claude Code, developers accept AI-generated code blocks at blistering speed. But velocity comes with a hidden cost: **Cognitive Debt**.
+AI coding assistants can generate large changes in seconds, but developers may accept code they cannot fully explain. This velocity introduces **Cognitive Debt**.
 
 > **Cognitive Debt** is code accepted into a codebase that the human author cannot explain, debug, or maintain under pressure.
 
@@ -47,7 +47,7 @@ flowchart LR
     E --> F["6. Targeted Adversarial Test + COGNITIVE_MAP.md"]
 ```
 
-1. **Diff Pre-flight Check:** Automatically parses unified diffs and isolates high-risk hunks (concurrency, auth tokens, error boundaries).
+1. **Diff-aware Risk Analysis:** Automatically parses unified diffs and isolates high-risk hunks (concurrency, auth tokens, error boundaries).
 2. **Reverse Interview:** The AI acts as a Principal Architect, asking 3 line-specific probing questions.
 3. **Comprehension Scoring:** Evaluates technical accuracy vs. vague hand-waving (e.g. *"It handles errors gracefully"* triggers `⚠️ Vague Explanation`).
 4. **Targeted Adversarial Testing:** Generates a runnable Vitest test that deliberately breaks the exact function the author could not explain.
@@ -55,19 +55,18 @@ flowchart LR
 
 ---
 
-## 🎬 2-Minute Demo Flow (`/demo`)
+## 🎬 Demo Flow (`/demo`, Paced for 2:15 – 2:30)
 
 UnderstandGuard includes a dedicated `/demo` route pre-loaded with a realistic 42-line `auth.ts` diff:
 
 | Timestamp | Visual Action | What the Judges See |
 | :--- | :--- | :--- |
-| **0:00 – 0:15** | Hero screen & terminal | *"AI writes code. Humans must understand it."* Introduction to cognitive debt. |
-| **0:15 – 0:40** | Diff Viewer (`/demo`) | Reviewing `src/auth.ts` (token refresh flow with missing concurrency lock). |
-| **0:40 – 1:10** | Reverse Interview | System asks 3 line-specific questions targeting lines 41, 48, and 70. |
-| **1:10 – 1:25** | Vague Answer Input | Developer enters vague answer for Q2 (*"Handles errors gracefully"*); system flags **"⚠️ Vague Explanation"**. |
-| **1:25 – 1:40** | Adversarial Test | System generates test targeting `refreshToken()`; shows assertion failure: `expect(call2.status).toBe('fulfilled') // ❌ Received: 500`. |
-| **1:40 – 1:55** | Export Dashboard | Reviews `COGNITIVE_MAP.md` and Mermaid sequence diagram. |
-| **1:55 – 2:00** | Conclusion | *"UnderstandGuard turns AI-generated code from something you blind-accept into something you can explain."* |
+| **0:00 – 0:25** | Hero screen & terminal (`/demo`) | *"This is UnderstandGuard, built for Build With AI: Basics. AI assistants can generate large code changes quickly, but developers may accept changes they cannot fully explain..."* |
+| **0:25 – 0:50** | Diff Viewer (`/demo`) | Reviewing `src/auth.ts` (token refresh flow with missing concurrency lock on line 48). |
+| **0:50 – 1:15** | Reverse Interview | System asks 3 line-specific questions targeting lines 41, 48, and 70. |
+| **1:15 – 1:40** | Vague Answer Input | Developer enters vague answer for Q2 (*"Handles errors gracefully"*); system flags **"⚠️ Vague Explanation"** and running score drops. |
+| **1:40 – 2:05** | Solid Answers & Adversarial Test | Developer enters solid technical answers; system generates test targeting `refreshToken()` with reproducible failure assertion. |
+| **2:05 – 2:25** | Export Dashboard & Download | Reviews `COGNITIVE_MAP.md` Mermaid sequence diagram and downloads architectural artifact. |
 
 ---
 
@@ -75,8 +74,8 @@ UnderstandGuard includes a dedicated `/demo` route pre-loaded with a realistic 4
 
 * **Frontend:** Next.js 14 (App Router), React 18, Tailwind CSS, Lucide Icons.
 * **Diff Parsing:** `parse-diff` for unified diff hunk and line analysis.
-* **AI Orchestration:** Google Gemini 1.5/2.5 Flash via `@google/generative-ai`.
-* **Reliability Engine:** Built-in deterministic mock router (`?mock=true`) guaranteeing zero-delay, zero-failure presentations.
+* **AI Orchestration:** Google Gemini 1.5 Flash via `@google/generative-ai`.
+* **Reliable Demo Mode:** Built-in deterministic mock router (`?mock=true`) with pre-baked fixtures for reliable presentations and judge evaluation; live Gemini generation is available when an API key is configured.
 
 ---
 

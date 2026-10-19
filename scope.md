@@ -24,7 +24,7 @@ For the *Build with AI: Basics* proof-of-concept, the product executes **one com
 
 1. **Diff Input:**
    * Single-file or multi-hunk Git diff ingestion via paste or sample fixture (focused on ≤ 50 lines of critical code).
-2. **AST / Diff Analysis:**
+2. **Diff-aware Risk Analysis:**
    * In-memory diff parsing using `parse-diff` to extract filenames, line numbers, added functions, and modified state logic.
 3. **3-Question Reverse Interview:**
    * Automated generation of three line-specific, probing questions targeting edge cases, error states, and async concurrency.

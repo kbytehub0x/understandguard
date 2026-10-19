@@ -26,7 +26,7 @@ flowchart TD
     end
 
     subgraph CoreEngine ["Analysis & Evaluation Engine"]
-        DiffParser["parse-diff Library (AST & Line Mapper)"]
+        DiffParser["parse-diff Library (Diff Hunk & Line Mapper)"]
         HeuristicFilter["Critical Logic Filter (async, auth, state)"]
         LLMOrchestrator["Gemini API Orchestrator (Prompt Engine)"]
         DeterministicFixtures["Pre-baked Demo JSON Fixtures"]
